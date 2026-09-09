@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { sendMagicLinkEmail } from "@/lib/email/magic-link";
 import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,18 +17,18 @@ export async function signInWithGoogle() {
 }
 
 export async function signInWithMagicLink(formData: FormData) {
-  const email = String(formData.get("email") ?? "").trim();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
   if (!email) redirect("/login?error=Enter+your+email");
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    // Ride the DEFAULT ({{ .ConfirmationURL }}) email template — it honors this
-    // per-request redirect, so we don't touch the shared project's Site URL or
-    // email templates. Same code-exchange path as Google (/auth/callback).
-    options: { emailRedirectTo: `${env.siteUrl}/auth/callback` },
-  });
-  if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  // Generate the link server-side and deliver via Resend (WCV's own
+  // from-address) — the shared project's Supabase SMTP is never used.
+  try {
+    await sendMagicLinkEmail(email);
+  } catch {
+    redirect("/login?error=Could+not+send+the+sign-in+email");
+  }
   redirect("/login?sent=1");
 }
 

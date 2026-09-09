@@ -30,7 +30,20 @@ export const DEFAULT_BUILDING_SLUG = "wcv";
 export const serverEnv = {
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   superadminSecret: process.env.SUPERADMIN_SECRET,
+  resendApiKey: process.env.RESEND_API_KEY,
+  emailFrom:
+    process.env.EMAIL_FROM ??
+    "West Complex Village <noreply-live-together@pisan.me>",
 } as const;
+
+/** Returns Resend credentials, throwing if the API key is missing. */
+export function requireResend(): { apiKey: string; from: string } {
+  const apiKey = serverEnv.resendApiKey;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not set (required to send email).");
+  }
+  return { apiKey, from: serverEnv.emailFrom };
+}
 
 /** Returns the service-role key, throwing a clear error if it is missing. */
 export function requireServiceRoleKey(): string {
