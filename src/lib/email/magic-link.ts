@@ -45,14 +45,18 @@ export async function sendMagicLinkEmail(email: string): Promise<void> {
     ({ data, error } = await generate());
   }
 
-  const tokenHash = data?.properties?.hashed_token;
-  if (error || !tokenHash) {
+  const props = data?.properties;
+  if (error || !props?.hashed_token) {
     throw error ?? new Error("Could not generate a magic link");
   }
 
   const url = new URL(`${env.siteUrl}/auth/confirm`);
-  url.searchParams.set("token_hash", tokenHash);
-  url.searchParams.set("type", "magiclink");
+  url.searchParams.set("token_hash", props.hashed_token);
+  // Use the ACTUAL verification type — Supabase returns `signup` for a
+  // brand-new email and `magiclink` for an existing user. Hardcoding either
+  // makes verifyOtp reject the other (which bounced users back to /login).
+  url.searchParams.set("type", props.verification_type ?? "magiclink");
+  url.searchParams.set("next", "/");
 
   await sendEmail({
     to: email,

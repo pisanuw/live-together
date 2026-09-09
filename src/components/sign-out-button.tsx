@@ -1,12 +1,12 @@
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { signOut } from "@/lib/auth/actions";
 
 export function SignOutButton() {
   return (
     <form action={signOut}>
-      <Button type="submit" variant="outline" size="sm">
+      <SubmitButton variant="outline" size="sm" pendingText="Signing out…">
         Sign out
-      </Button>
+      </SubmitButton>
     </form>
   );
 }

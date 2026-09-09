@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { signInWithGoogle, signInWithMagicLink } from "@/lib/auth/actions";
 import { getViewer } from "@/lib/auth/context";
 import { viewerStatus } from "@/lib/auth/routing";
@@ -42,9 +42,13 @@ export default async function LoginPage({
       ) : null}
 
       <form action={signInWithGoogle}>
-        <Button type="submit" variant="outline" className="w-full">
+        <SubmitButton
+          variant="outline"
+          className="w-full"
+          pendingText="Redirecting to Google…"
+        >
           Continue with Google
-        </Button>
+        </SubmitButton>
       </form>
 
       <div className="text-muted-foreground flex items-center gap-3 text-xs">
@@ -62,9 +66,9 @@ export default async function LoginPage({
           autoComplete="email"
           className="border-input bg-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm outline-none focus-visible:ring-2"
         />
-        <Button type="submit" className="w-full">
+        <SubmitButton className="w-full" pendingText="Sending link…">
           Email me a magic link
-        </Button>
+        </SubmitButton>
       </form>
 
       <p className="text-muted-foreground text-center text-xs">
