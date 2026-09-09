@@ -382,16 +382,26 @@ Each stage ends in a deployable, demoable increment. Suggested order:
   accent color (column scaffolded); legal/notification settings (Stage 7).
 - **Done when:** navigation, theming, and profile editing work end to end. ✅
 
-### Stage 3 — Forum (core feature)
-- Tables: `categories` (seeded), `posts`, `post_categories`, `comments`,
-  `reactions`, `attachments`.
-- Create/edit/delete own posts & comments; one-level threaded replies.
-- Emoji reactions on posts and comments.
-- Category tagging + filtering; pinned posts; manager moderation.
-- Image attachments (upload → Storage → `attachments`).
-- Realtime updates for open threads.
+### Stage 3 — Forum (core feature) ✅
+- ✅ Tables applied to the shared project: `categories` (seeded per building),
+  `posts`, `post_categories`, `comments`, `reactions`, `attachments` (+ RLS
+  SELECT policies, `updated_at` triggers, feed index, `wcv-forum-media` bucket).
+- ✅ Create/edit/delete own posts & comments; one-level threaded replies
+  (replies-to-replies are flattened to the root). Managers can delete any
+  post/comment and pin. Writes go through the service role in Server Actions
+  (Zod-validated, building-scoped, session-derived authorization).
+- ✅ Emoji reactions on posts and comments (toggle, per-user unique).
+- ✅ Category tagging + feed filtering (`/forum?category=slug`); pinned posts
+  float to the top; manager pin/unpin + moderation controls.
+- ✅ Image attachments (client upload → `wcv-forum-media` via service role →
+  `attachments`; served as signed URLs). Validated mime/size/count.
+- ✅ Realtime updates for open threads (posts + comments added to the
+  `supabase_realtime` publication; the detail page subscribes and refreshes).
+  Degrades gracefully if Realtime is disabled on the shared project.
+- Pure helpers (reactions summary, permissions, excerpt, comment-tree) are
+  unit-tested in `__tests__/forum.test.ts`.
 - **Done when:** residents can post, reply, react, tag, filter, and attach
-  images; managers can pin/moderate.
+  images; managers can pin/moderate. ✅
 
 ### Stage 4 — Events & My Events
 - Tables: `events`, `event_signups`.
