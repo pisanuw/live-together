@@ -338,22 +338,35 @@ Each stage ends in a deployable, demoable increment. Suggested order:
 - ⏳ Netlify site connected; first deploy green. **(pending — see Stage 0.5)**
 - **Done when:** empty app deploys to Netlify and connects to Supabase.
 
-### Stage 0.5 — Netlify deploy (pending)
-- Link the repo to Netlify; set env vars in the Netlify UI; verify the Next.js
-  16 runtime builds (pin to Next 15 if the runtime lags on the new major).
+### Stage 0.5 — Netlify deploy ✅
+- Repo linked to Netlify (site `wcv-live-together`); env vars set; Next.js 16
+  builds cleanly on Netlify's runtime; git push → auto-deploy verified.
 
-### Stage 1 — Auth & tenancy foundation
-- **Apply the `wcv` schema migration to the shared project** and add `wcv` to
-  the project's exposed Data API schemas; create the `wcv-*` storage buckets.
-- `@supabase/ssr` auth (Google + magic link), `/auth/callback`, sign-in/out,
-  session refresh in `proxy.ts` (Next 16 renamed `middleware` → `proxy`).
-- Tables (all in `wcv`): `buildings`, `profiles`, `memberships`, `invites`,
-  `units`.
-- RLS helpers (`is_approved_member`, `is_manager`, `is_admin`) + policies.
-- Invite/approval flow: super-admin bootstraps a building + first admin; admins
-  invite + approve members; pending/rejected states handled in UI.
+### Stage 1 — Auth & tenancy foundation ✅ (code + DB) / ⏳ (dashboard config)
+- ✅ Migrations applied to the shared project: `wcv.buildings`, `wcv.units`,
+  `wcv.profiles`, `wcv.memberships`, `wcv.invites` (+ enums, indexes,
+  `updated_at` triggers), seeded building `wcv`.
+- ✅ RLS helpers (`is_approved_member`, `member_role`, `is_manager`,
+  `is_admin`) + SELECT policies; behavior verified (pending sees nothing,
+  admin sees all). Writes go through the service role in Server Actions.
+- ✅ `@supabase/ssr` auth: Google OAuth + magic link, `/auth/callback`,
+  `/auth/confirm`, sign-out, session refresh in `proxy.ts`.
+- ✅ Provisioning: first login creates a profile + membership (invited email →
+  approved; otherwise pending). Bootstrap first admin via `/bootstrap`
+  (SUPERADMIN_SECRET). Managers approve/reject + invite at `/manage/members`.
+- ⏳ **Manual Supabase dashboard steps required for the flow to work:**
+  1. Add `wcv` to Project Settings → API → **Exposed schemas**.
+  2. Configure the **Google** auth provider + redirect URL
+     `${SITE_URL}/auth/callback`.
+  3. Set the **Magic Link** email template link to
+     `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`
+     and add the site URL to Auth → URL Configuration → Redirect URLs.
+  4. (For bootstrap in prod) set `SUPERADMIN_SECRET` in Netlify env.
+- Deferred: `wcv-*` storage buckets (created with avatars in Stage 2); email
+  delivery of invites (Stage 8 — invites are matched by email at sign-in now).
 - **Done when:** an invited resident can log in, be approved, and land in an
-  (empty) building; a stranger is held at `pending`.
+  (empty) building; a stranger is held at `pending`.  *(Reachable once the
+  dashboard steps above are done.)*
 
 ### Stage 2 — App shell, navigation & settings scaffold
 - Responsive layout: sidebar/nav for Forum, Info Desk, Events, My Events,

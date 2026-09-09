@@ -17,9 +17,10 @@ comment on schema wcv is
 -- table (added alongside the tables in later Stage 1 migrations).
 grant usage on schema wcv to anon, authenticated, service_role;
 
--- Future tables in this schema are reachable via PostgREST by default; RLS
--- policies (defined per table) remain the actual access gate.
+-- Least privilege by default: future tables are readable (RLS still governs
+-- WHICH rows), but writes are granted per-table only where client writes are
+-- intended. Privileged writes go through the service_role (server-side).
 alter default privileges in schema wcv
-  grant select, insert, update, delete on tables to anon, authenticated;
+  grant select on tables to anon, authenticated;
 alter default privileges in schema wcv
   grant all on tables to service_role;

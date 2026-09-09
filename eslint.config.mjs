@@ -20,6 +20,7 @@ const eslintConfig = defineConfig([
     "playwright-report/**",
     "test-results/**",
     "supabase/.temp/**",
+    ".netlify/**",
   ]),
 ]);
 
