@@ -368,12 +368,19 @@ Each stage ends in a deployable, demoable increment. Suggested order:
   (empty) building; a stranger is held at `pending`.  *(Reachable once the
   dashboard steps above are done.)*
 
-### Stage 2 — App shell, navigation & settings scaffold
-- Responsive layout: sidebar/nav for Forum, Info Desk, Events, My Events,
-  Maintenance, Settings. Building switcher for multi-building users.
-- Theme system (light/dark/system + accent) wired to `user_settings`.
-- Profile: preferred name + avatar upload.
-- **Done when:** navigation, theming, and profile editing work end to end.
+### Stage 2 — App shell, navigation & settings scaffold ✅
+- ✅ `(app)` route group + shell layout (approved-only): responsive header
+  (building, avatar, sign-out) + nav (Forum, Info Desk, Events, My Events,
+  Maintenance, Settings; Members for managers) with active states. Section
+  stub pages in place.
+- ✅ Theme system (system/light/dark) stored in `wcv.user_settings`, applied
+  server-side in the root layout (no flash; `system` resolved before paint).
+- ✅ Profile: preferred name + full name editing; avatar upload to the private
+  `wcv-avatars` bucket (service-role upload + signed URLs; Google avatars pass
+  through). `getViewer` memoized with React `cache`.
+- Deferred to later polish: multi-building switcher (single building for now);
+  accent color (column scaffolded); legal/notification settings (Stage 7).
+- **Done when:** navigation, theming, and profile editing work end to end. ✅
 
 ### Stage 3 — Forum (core feature)
 - Tables: `categories` (seeded), `posts`, `post_categories`, `comments`,
