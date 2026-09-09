@@ -12,6 +12,14 @@ export const env = {
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 } as const;
 
+/**
+ * WCV shares the "upvoteme" Supabase project with other apps, so every WCV
+ * table lives in this dedicated Postgres schema — never `public` — to avoid
+ * name collisions. All Supabase clients default their queries to it.
+ * (The schema must be added to the project's exposed Data API schemas.)
+ */
+export const DB_SCHEMA = "wcv";
+
 /** True when the browser-safe Supabase credentials are present. */
 export function isSupabaseConfigured(): boolean {
   return Boolean(env.supabaseUrl && env.supabaseAnonKey);

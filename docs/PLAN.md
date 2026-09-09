@@ -31,11 +31,12 @@
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| Frontend framework | **Next.js (App Router, TypeScript)** | SSR-capable, first-class Supabase SSR auth, good Netlify support. |
-| Backend / data | **Supabase** (Postgres + Auth + Storage + Edge Functions + Realtime) | One managed platform covers auth, DB, file storage, and serverless. |
+| Frontend framework | **Next.js 16 (App Router, TypeScript)** | SSR-capable, first-class Supabase SSR auth, good Netlify support. |
+| Backend / data | **Supabase** (Postgres + Auth + Storage + Edge Functions + Realtime), **shared "upvoteme" project** | Reuse an existing project; WCV is isolated inside it (see below). |
+| Project isolation | **Dedicated `wcv` Postgres schema** + **`wcv-` prefixed storage buckets** | The `upvoteme` project is shared with other apps; WCV must not touch `public` or unprefixed buckets. |
 | Auth methods | **Google OAuth** + **magic link (email OTP)** | Both handled by Supabase Auth. |
 | Access model | **Manager invite / approval** | New users are `pending` until approved; RLS gates all content. |
-| Tenancy | **Multi-tenant** (`buildings`) | Every domain row carries `building_id`; RLS isolates buildings. |
+| Tenancy | **Multi-tenant** (`buildings`) | Every domain row carries `building_id`; RLS isolates buildings — within the `wcv` schema. |
 | Styling / UI | **Tailwind CSS + shadcn/ui** (Radix) | Fast, accessible, fully themeable (supports Settings "look & feel"). |
 | Hosting | **Netlify** (Next.js runtime) | Requested; integrates with the Supabase-hosted DB. |
 | Email | **Supabase Auth SMTP** (magic link) + **Resend** (notifications) | SMTP + Resend keys already available in the environment. |
@@ -105,6 +106,12 @@ invited ──accept──▶ pending ──approve──▶ approved ──susp
 ---
 
 ## 5. Data Model (Supabase / Postgres)
+
+**All WCV tables live in the dedicated `wcv` schema** (e.g. `wcv.buildings`),
+never `public`, because the `upvoteme` project is shared with other apps. The
+`wcv` schema is added to the project's exposed Data API schemas, and all
+Supabase clients set `db.schema = "wcv"`. "Global" below means global to WCV —
+still inside the `wcv` schema; only `auth.users` (Supabase-managed) is external.
 
 All tables use `uuid` primary keys (`gen_random_uuid()`), `created_at` /
 `updated_at timestamptz`, and (except global tables) a `building_id` FK. Soft
@@ -213,11 +220,13 @@ resolve findings before deploy.
 
 ## 7. Storage Layout
 
+Storage buckets are **project-global** (not schema-scoped), so on the shared
+`upvoteme` project every WCV bucket is prefixed `wcv-` to avoid collisions.
 Buckets (all private; access via signed URLs or RLS-guarded downloads):
-- `avatars` — path `user_id/…`
-- `forum-media` — path `building_id/post_id/…`
-- `event-media` — path `building_id/event_id/…`
-- `maintenance-media` — path `building_id/request_id/…`
+- `wcv-avatars` — path `user_id/…`
+- `wcv-forum-media` — path `building_id/post_id/…`
+- `wcv-event-media` — path `building_id/event_id/…`
+- `wcv-maintenance-media` — path `building_id/request_id/…`
 
 Client uploads go straight to Storage with RLS policies; on success a row is
 written to `attachments`. Images are validated (mime + size) client-side and
@@ -320,17 +329,26 @@ Google OAuth client ID/secret are configured in the **Supabase dashboard**
 
 Each stage ends in a deployable, demoable increment. Suggested order:
 
-### Stage 0 — Project scaffold & infrastructure
-- Next.js (App Router, TS) + Tailwind + shadcn/ui initialized.
-- Supabase project created; CLI wired up; `supabase/migrations/` established.
-- `.gitignore`, `.env.example`, ESLint/Prettier, Vitest, Playwright, GitHub
-  Actions skeleton.
-- Netlify site connected; first "hello world" deploy green.
+### Stage 0 — Project scaffold & infrastructure ✅ (mostly)
+- ✅ Next.js 16 (App Router, TS) + Tailwind v4 + shadcn/ui initialized.
+- ✅ CLI wired up; `supabase/migrations/` established; using the shared
+  `upvoteme` project; `wcv` schema migration authored (not yet applied).
+- ✅ `.gitignore`, `.env.example`, ESLint/Prettier, Vitest, Playwright, GitHub
+  Actions skeleton; env wired; `/api/health` confirms live Supabase connection.
+- ⏳ Netlify site connected; first deploy green. **(pending — see Stage 0.5)**
 - **Done when:** empty app deploys to Netlify and connects to Supabase.
 
+### Stage 0.5 — Netlify deploy (pending)
+- Link the repo to Netlify; set env vars in the Netlify UI; verify the Next.js
+  16 runtime builds (pin to Next 15 if the runtime lags on the new major).
+
 ### Stage 1 — Auth & tenancy foundation
-- `@supabase/ssr` auth (Google + magic link), `/auth/callback`, sign-in/out.
-- Tables: `buildings`, `profiles`, `memberships`, `invites`, `units`.
+- **Apply the `wcv` schema migration to the shared project** and add `wcv` to
+  the project's exposed Data API schemas; create the `wcv-*` storage buckets.
+- `@supabase/ssr` auth (Google + magic link), `/auth/callback`, sign-in/out,
+  session refresh in `proxy.ts` (Next 16 renamed `middleware` → `proxy`).
+- Tables (all in `wcv`): `buildings`, `profiles`, `memberships`, `invites`,
+  `units`.
 - RLS helpers (`is_approved_member`, `is_manager`, `is_admin`) + policies.
 - Invite/approval flow: super-admin bootstraps a building + first admin; admins
   invite + approve members; pending/rejected states handled in UI.

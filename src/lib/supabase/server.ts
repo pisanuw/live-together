@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
-import { requireSupabaseEnv } from "@/lib/env";
+import { DB_SCHEMA, requireSupabaseEnv } from "@/lib/env";
 
 /**
  * Supabase client for use in Server Components, Server Actions, and Route
@@ -14,6 +14,7 @@ export async function createClient() {
   const { url, anonKey } = requireSupabaseEnv();
 
   return createServerClient(url, anonKey, {
+    db: { schema: DB_SCHEMA },
     cookies: {
       getAll() {
         return cookieStore.getAll();
