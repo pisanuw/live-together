@@ -22,7 +22,10 @@ export async function signInWithMagicLink(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${env.siteUrl}/auth/confirm` },
+    // Ride the DEFAULT ({{ .ConfirmationURL }}) email template — it honors this
+    // per-request redirect, so we don't touch the shared project's Site URL or
+    // email templates. Same code-exchange path as Google (/auth/callback).
+    options: { emailRedirectTo: `${env.siteUrl}/auth/callback` },
   });
   if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`);
   redirect("/login?sent=1");
