@@ -1,0 +1,13 @@
+# Netlify deploy config for WCV (Next.js).
+# The official Next.js runtime is auto-installed by Netlify; it handles
+# routing, SSR, and static assets — do not set `publish` manually.
+
+[build]
+  command = "npm run build"
+
+[build.environment]
+  # Match the local toolchain; Netlify supports 20/22.
+  NODE_VERSION = "22"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
