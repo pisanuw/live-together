@@ -342,7 +342,7 @@ Each stage ends in a deployable, demoable increment. Suggested order:
 - Repo linked to Netlify (site `wcv-live-together`); env vars set; Next.js 16
   builds cleanly on Netlify's runtime; git push → auto-deploy verified.
 
-### Stage 1 — Auth & tenancy foundation ✅ (code + DB) / ⏳ (dashboard config)
+### Stage 1 — Auth & tenancy foundation ✅
 - ✅ Migrations applied to the shared project: `wcv.buildings`, `wcv.units`,
   `wcv.profiles`, `wcv.memberships`, `wcv.invites` (+ enums, indexes,
   `updated_at` triggers), seeded building `wcv`.
@@ -354,19 +354,19 @@ Each stage ends in a deployable, demoable increment. Suggested order:
 - ✅ Provisioning: first login creates a profile + membership (invited email →
   approved; otherwise pending). Bootstrap first admin via `/bootstrap`
   (SUPERADMIN_SECRET). Managers approve/reject + invite at `/manage/members`.
-- ⏳ **Manual Supabase dashboard steps required for the flow to work:**
-  1. Add `wcv` to Project Settings → API → **Exposed schemas**.
-  2. Configure the **Google** auth provider + redirect URL
-     `${SITE_URL}/auth/callback`.
-  3. Set the **Magic Link** email template link to
-     `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`
-     and add the site URL to Auth → URL Configuration → Redirect URLs.
-  4. (For bootstrap in prod) set `SUPERADMIN_SECRET` in Netlify env.
+- ✅ **Supabase dashboard config (done):**
+  1. `wcv` added to **Exposed schemas** (Integrations → Data API → Settings tab)
+     — verified reachable via PostgREST (anon `GET /rest/v1/buildings` → `200 []`,
+     RLS correctly returning no rows).
+  2. **Google** auth provider + redirect `${SITE_URL}/auth/callback` configured.
+  3. **Magic Link** email template →
+     `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`.
+  - Remaining for prod deploy only: set `SUPERADMIN_SECRET` in Netlify env (for
+    `/bootstrap`).
 - Deferred: `wcv-*` storage buckets (created with avatars in Stage 2); email
   delivery of invites (Stage 8 — invites are matched by email at sign-in now).
 - **Done when:** an invited resident can log in, be approved, and land in an
-  (empty) building; a stranger is held at `pending`.  *(Reachable once the
-  dashboard steps above are done.)*
+  (empty) building; a stranger is held at `pending`. ✅ (dashboard config live)
 
 ### Stage 2 — App shell, navigation & settings scaffold ✅
 - ✅ `(app)` route group + shell layout (approved-only): responsive header
