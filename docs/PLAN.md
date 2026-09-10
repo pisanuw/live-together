@@ -439,11 +439,19 @@ Each stage ends in a deployable, demoable increment. Suggested order:
 - **Done when:** full request lifecycle (open → in_progress → resolved/closed)
   works for both roles. ✅
 
-### Stage 6 — Info Desk
-- Tables: `info_sections`, `info_items`.
-- Manager-editable sections (management contacts, phone numbers, hours,
-  policies) rendered from markdown.
-- **Done when:** managers edit info; residents view it, click-to-call phones.
+### Stage 6 — Info Desk ✅
+- ✅ Tables applied: `info_sections`, `info_items` (+ RLS SELECT policies,
+  `updated_at` trigger, indexes); four default sections seeded (Contacts, Hours,
+  Policies, Amenities).
+- ✅ Manager CRUD at `/info/manage`: add/rename/delete sections; add/edit/delete
+  items with title, markdown body, phone, and link (service-role writes,
+  Zod-validated, manager-gated).
+- ✅ Residents view at `/info`: sections + items with rendered markdown,
+  click-to-call phone (`tel:`), and outbound links.
+- ✅ Safe in-house markdown subset (paragraphs, lists, bold/italic, links) —
+  rendered as React nodes (no `dangerouslySetInnerHTML`); only http(s)/mailto/tel
+  link schemes survive. Parser unit-tested in `__tests__/markdown.test.ts`.
+- **Done when:** managers edit info; residents view it, click-to-call phones. ✅
 
 ### Stage 7 — Settings completion
 - Preferred name, look-and-feel (theme/accent), notification preferences,
