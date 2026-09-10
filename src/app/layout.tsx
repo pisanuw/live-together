@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { getViewer } from "@/lib/auth/context";
 import { accentStyle } from "@/lib/settings/accent";
 import { themeInitScript } from "@/lib/settings/theme";
@@ -19,6 +20,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "WCV — West Complex Village",
   description: "Community app for the residents of West Complex Village.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "WCV", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#111111",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -36,6 +43,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${darkClass} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        <ServiceWorkerRegister />
         {accentCss ? <style>{accentCss}</style> : null}
         {initScript ? (
           <script dangerouslySetInnerHTML={{ __html: initScript }} />

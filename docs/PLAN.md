@@ -469,11 +469,25 @@ Each stage ends in a deployable, demoable increment. Suggested order:
 - **Done when:** all settings persist and notif prefs are available to gate
   emails (Stage 8 consumes them). ✅
 
-### Stage 8 — Notifications hardening & PWA
-- Resend-backed transactional emails via Edge Functions across all features.
-- In-app notification center (Realtime + `notifications`).
-- PWA manifest + service worker + Web Push (`push_subscriptions`, VAPID).
-- **Done when:** users receive email + in-app + push notifications per prefs.
+### Stage 8 — Notifications hardening & PWA ✅ (push send deferred)
+- ✅ Tables applied: `notifications`, `push_subscriptions` (+ RLS SELECT
+  policies scoped to the owner; `notifications` added to the Realtime pub).
+- ✅ `notify()` / `notifyMany()` helpers: honor `user_settings.notif_prefs`,
+  write an in-app row, and send a Resend email (best-effort; failures never
+  break the mutation). Emitted from forum replies, event cancellations, and
+  maintenance status changes / comments. (Transactional email is sent directly
+  via the existing Resend helper rather than an Edge Function — simpler and
+  consistent with the magic-link path.)
+- ✅ In-app notification center at `/notifications` (list, mark read / mark all
+  read) + header bell with unread badge; `NotificationsRealtime` refreshes live.
+- ✅ PWA: `manifest.webmanifest`, SVG icon, `sw.js` service worker (installable;
+  push + notificationclick handlers ready), registered on the client; root
+  metadata + theme color.
+- ⏳ Deferred: Web Push **send** + the subscribe/unsubscribe UI — the
+  `push_subscriptions` table and the SW `push` handler are in place, but sending
+  needs VAPID keys (unset) + a signing lib, so it's wired but not activated.
+- **Done when:** users receive email + in-app notifications per prefs ✅; push
+  delivery is scaffolded pending VAPID keys.
 
 ### Stage 9 — Admin & moderation tooling
 - Member management (invite, approve, suspend, roles), building settings,

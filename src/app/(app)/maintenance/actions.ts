@@ -7,7 +7,8 @@ import { z } from "zod";
 import { getViewer } from "@/lib/auth/context";
 import { viewerStatus } from "@/lib/auth/routing";
 import { isManagerRole } from "@/lib/auth/types";
-import { isValidTransition } from "@/lib/maintenance/helpers";
+import { isValidTransition, statusLabel } from "@/lib/maintenance/helpers";
+import { notify } from "@/lib/notifications/notify";
 import {
   isAcceptedImage,
   MAX_IMAGE_BYTES,
@@ -198,6 +199,19 @@ export async function postComment(formData: FormData) {
 
   revalidatePath("/maintenance");
   revalidatePath(`/maintenance/${requestId}`);
+
+  // A public comment from someone else notifies the request's owner.
+  if (!internal && request!.created_by !== viewerId) {
+    await notify({
+      userId: request!.created_by,
+      buildingId,
+      category: "maintenance",
+      type: "maintenance_comment",
+      title: "New comment on your maintenance request",
+      body: body.slice(0, 140),
+      link: `/maintenance/${requestId}`,
+    });
+  }
 }
 
 // -------------------------------------------------------- manager: triage ----
@@ -272,4 +286,17 @@ export async function triageRequest(formData: FormData) {
 
   revalidatePath("/maintenance");
   revalidatePath(`/maintenance/${requestId}`);
+
+  // Notify the owner when their request's status changes (not for self-edits).
+  if (statusChanged && request!.created_by !== viewerId) {
+    await notify({
+      userId: request!.created_by,
+      buildingId,
+      category: "maintenance",
+      type: "maintenance_status",
+      title: "Your maintenance request was updated",
+      body: `Status changed to ${statusLabel(status)}.`,
+      link: `/maintenance/${requestId}`,
+    });
+  }
 }

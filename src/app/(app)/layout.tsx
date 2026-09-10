@@ -2,9 +2,11 @@ import { redirect } from "next/navigation";
 
 import { AppHeader } from "@/components/app-header";
 import { AppNav } from "@/components/app-nav";
+import { NotificationsRealtime } from "@/components/notifications/realtime";
 import { getViewer } from "@/lib/auth/context";
 import { viewerStatus } from "@/lib/auth/routing";
 import { displayName, isManagerRole } from "@/lib/auth/types";
+import { unreadCount } from "@/lib/notifications/queries";
 import { resolveAvatarUrl } from "@/lib/storage/avatars";
 
 export default async function AppLayout({
@@ -19,14 +21,19 @@ export default async function AppLayout({
 
   const active = viewer.activeMembership!;
   const name = displayName(viewer.profile, "resident");
-  const avatarUrl = await resolveAvatarUrl(viewer.profile?.avatar_url);
+  const [avatarUrl, unread] = await Promise.all([
+    resolveAvatarUrl(viewer.profile?.avatar_url),
+    unreadCount(viewer.userId!),
+  ]);
 
   return (
     <div className="flex min-h-full flex-col">
+      <NotificationsRealtime userId={viewer.userId!} />
       <AppHeader
         name={name}
         buildingName={active.building?.name ?? "West Complex Village"}
         avatarUrl={avatarUrl}
+        unreadCount={unread}
       />
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-4 sm:p-6 md:flex-row">
         <AppNav canManage={isManagerRole(active.role)} />

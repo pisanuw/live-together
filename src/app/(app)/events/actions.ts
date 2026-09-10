@@ -13,6 +13,7 @@ import {
   MAX_COVER_BYTES,
   uploadEventCover,
 } from "@/lib/events/media";
+import { notifyMany } from "@/lib/notifications/notify";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 async function requireActor() {
@@ -181,6 +182,14 @@ export async function cancelEvent(formData: FormData) {
   if (!isManager) redirect("/events");
   const eventId = String(formData.get("eventId") ?? "");
 
+  const { data: event } = await admin
+    .from("events")
+    .select("id, title")
+    .eq("id", eventId)
+    .eq("building_id", buildingId)
+    .maybeSingle();
+  if (!event) redirect("/events");
+
   await admin
     .from("events")
     .update({ cancelled_at: new Date().toISOString() })
@@ -188,6 +197,24 @@ export async function cancelEvent(formData: FormData) {
     .eq("building_id", buildingId);
   revalidatePath("/events");
   revalidatePath(`/events/${eventId}`);
+
+  // Let everyone who signed up know the event was cancelled.
+  const { data: signups } = await admin
+    .from("event_signups")
+    .select("user_id")
+    .eq("event_id", eventId)
+    .neq("status", "cancelled");
+  await notifyMany(
+    (signups ?? []).map((s) => s.user_id as string),
+    {
+      buildingId,
+      category: "events",
+      type: "event_cancelled",
+      title: `Event cancelled: ${event!.title}`,
+      body: "An event you signed up for has been cancelled.",
+      link: `/events/${eventId}`,
+    }
+  );
 }
 
 // ------------------------------------------------- resident: sign up flow ----

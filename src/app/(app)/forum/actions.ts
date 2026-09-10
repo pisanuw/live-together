@@ -7,13 +7,19 @@ import { z } from "zod";
 import { getViewer } from "@/lib/auth/context";
 import { viewerStatus } from "@/lib/auth/routing";
 import { isManagerRole } from "@/lib/auth/types";
-import { canDelete, canEditOwn, REACTION_EMOJIS } from "@/lib/forum/helpers";
+import {
+  canDelete,
+  canEditOwn,
+  excerpt,
+  REACTION_EMOJIS,
+} from "@/lib/forum/helpers";
 import {
   isAcceptedImage,
   MAX_IMAGE_BYTES,
   MAX_IMAGES_PER_POST,
   uploadForumImage,
 } from "@/lib/forum/media";
+import { notify } from "@/lib/notifications/notify";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /** The authenticated, approved actor plus their building + moderation rights. */
@@ -222,7 +228,7 @@ export async function createComment(formData: FormData) {
 
   const { data: post } = await admin
     .from("posts")
-    .select("id")
+    .select("id, author_id, title")
     .eq("id", postId)
     .eq("building_id", buildingId)
     .is("deleted_at", null)
@@ -234,10 +240,11 @@ export async function createComment(formData: FormData) {
 
   // Keep threading one level deep: a reply to a reply attaches to its root.
   let parentCommentId: string | null = null;
+  let parentAuthorId: string | null = null;
   if (rawParent) {
     const { data: parent } = await admin
       .from("comments")
-      .select("id, parent_comment_id, post_id")
+      .select("id, parent_comment_id, post_id, author_id")
       .eq("id", rawParent)
       .eq("building_id", buildingId)
       .is("deleted_at", null)
@@ -245,6 +252,7 @@ export async function createComment(formData: FormData) {
     if (parent && parent.post_id === postId) {
       parentCommentId =
         (parent.parent_comment_id as string | null) ?? (parent.id as string);
+      parentAuthorId = parent.author_id as string;
     }
   }
 
@@ -257,6 +265,32 @@ export async function createComment(formData: FormData) {
   });
   revalidatePath("/forum");
   revalidatePath(`/forum/${postId}`);
+
+  // Notify the post author and (on a reply) the parent commenter — never self.
+  const postAuthorId = post!.author_id as string;
+  const link = `/forum/${postId}`;
+  const preview = excerpt(parsed.data.body, 140);
+  const recipients = new Set<string>();
+  if (postAuthorId !== viewerId) recipients.add(postAuthorId);
+  if (parentAuthorId && parentAuthorId !== viewerId) {
+    recipients.add(parentAuthorId);
+  }
+  await Promise.all(
+    [...recipients].map((userId) =>
+      notify({
+        userId,
+        buildingId,
+        category: "forum",
+        type: "forum_reply",
+        title:
+          userId === postAuthorId
+            ? `New comment on "${post!.title}"`
+            : `New reply to your comment`,
+        body: preview,
+        link,
+      })
+    )
+  );
 }
 
 export async function updateComment(formData: FormData) {
