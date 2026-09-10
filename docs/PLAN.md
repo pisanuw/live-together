@@ -416,9 +416,10 @@ Each stage ends in a deployable, demoable increment. Suggested order:
   cancel → auto-promote). RPCs granted to `service_role` only (advisor-clean).
 - ✅ **My Events:** the viewer's active sign-ups, split into upcoming & past.
 - Pure seat/timing logic unit-tested in `__tests__/events.test.ts`.
-- Deferred to Stage 8: email/in-app notifications on cancel / waitlist
-  promotion (the promotion itself already happens in the DB). Timezone-aware
-  display (times are currently a UTC "wall clock") is later polish.
+- ✅ Notifications on cancel / waitlist promotion land via Stage 8 (`notify()`);
+  event times are timezone-aware — stored as UTC instants and rendered in the
+  building's IANA timezone (DST-aware, unit-tested), with the form input
+  interpreted in that zone.
 - **Done when:** capacity-limited sign-ups work correctly under concurrency and
   appear in My Events. ✅
 
@@ -469,7 +470,7 @@ Each stage ends in a deployable, demoable increment. Suggested order:
 - **Done when:** all settings persist and notif prefs are available to gate
   emails (Stage 8 consumes them). ✅
 
-### Stage 8 — Notifications hardening & PWA ✅ (push send deferred)
+### Stage 8 — Notifications hardening & PWA ✅
 - ✅ Tables applied: `notifications`, `push_subscriptions` (+ RLS SELECT
   policies scoped to the owner; `notifications` added to the Realtime pub).
 - ✅ `notify()` / `notifyMany()` helpers: honor `user_settings.notif_prefs`,
@@ -483,11 +484,11 @@ Each stage ends in a deployable, demoable increment. Suggested order:
 - ✅ PWA: `manifest.webmanifest`, SVG icon, `sw.js` service worker (installable;
   push + notificationclick handlers ready), registered on the client; root
   metadata + theme color.
-- ⏳ Deferred: Web Push **send** + the subscribe/unsubscribe UI — the
-  `push_subscriptions` table and the SW `push` handler are in place, but sending
-  needs VAPID keys (unset) + a signing lib, so it's wired but not activated.
-- **Done when:** users receive email + in-app notifications per prefs ✅; push
-  delivery is scaffolded pending VAPID keys.
+- ✅ Web Push fully wired: `web-push` sender (`notify()` pushes to a user's
+  subscriptions, pruning expired ones), a Settings enable/disable toggle that
+  subscribes via the service worker, and VAPID keys in env (local + Netlify).
+  No-ops gracefully if VAPID keys are absent.
+- **Done when:** users receive email + in-app + push notifications per prefs. ✅
 
 ### Stage 9 — Admin & moderation tooling ✅
 - ✅ `/manage` hub links to the tools a manager/admin can use.
@@ -510,7 +511,9 @@ Each stage ends in a deployable, demoable increment. Suggested order:
   app boots. CI already gates lint → typecheck → unit tests → build, then E2E.
 - ✅ RLS: verified all 20 `wcv` tables have RLS enabled + a policy; the app
   writes via the service role with app-layer authorization (policies are
-  defense-in-depth). A full pgTAP cross-user suite is deferred (see LAUNCH.md).
+  defense-in-depth). A runnable isolation test lives at
+  `supabase/tests/rls_isolation.sql`; behavior was verified live (a stranger
+  sees 0 rows; an approved member sees their building's content).
 - ✅ Advisors: no security/perf **WARN or ERROR** attributable to `wcv`
   (residual INFO — low-selectivity FK indexes, unused indexes on empty tables —
   is acceptable; the WARNs shown belong to other apps' `public` tables or

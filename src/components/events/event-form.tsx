@@ -13,10 +13,12 @@ const inputClass =
 export function EventForm({
   action,
   event,
+  timezone,
   submitLabel,
 }: {
   action: (formData: FormData) => Promise<void>;
   event?: EventDetail;
+  timezone: string;
   submitLabel: string;
 }) {
   return (
@@ -75,7 +77,10 @@ export function EventForm({
             name="starts_at"
             type="datetime-local"
             required
-            defaultValue={toDatetimeLocalValue(event?.startsAt ?? null)}
+            defaultValue={toDatetimeLocalValue(
+              event?.startsAt ?? null,
+              timezone
+            )}
             className={inputClass}
           />
         </div>
@@ -90,11 +95,14 @@ export function EventForm({
             id="ends_at"
             name="ends_at"
             type="datetime-local"
-            defaultValue={toDatetimeLocalValue(event?.endsAt ?? null)}
+            defaultValue={toDatetimeLocalValue(event?.endsAt ?? null, timezone)}
             className={inputClass}
           />
         </div>
       </div>
+      <p className="text-muted-foreground -mt-2 text-xs">
+        Times are in {timezone}.
+      </p>
 
       <div className="space-y-1">
         <label htmlFor="capacity" className="text-sm font-medium">

@@ -2,6 +2,7 @@ import "server-only";
 
 import { sendEmail } from "@/lib/email/resend";
 import { env } from "@/lib/env";
+import { sendPushToUser } from "@/lib/notifications/push";
 import type { NotifCategory } from "@/lib/settings/notifications";
 import {
   isNotifEnabled,
@@ -59,6 +60,13 @@ export async function notify(input: NotifyInput): Promise<void> {
     title: input.title,
     body: input.body ?? null,
     link: input.link ?? null,
+  });
+
+  // Web Push (best-effort; no-ops without VAPID keys or subscriptions).
+  await sendPushToUser(input.userId, {
+    title: input.title,
+    body: input.body ?? null,
+    url: input.link ?? null,
   });
 
   if (input.email === false) return;

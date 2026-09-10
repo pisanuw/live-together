@@ -48,6 +48,7 @@ export default async function EditEventPage({
       <EventForm
         action={updateEvent}
         event={event!}
+        timezone={event!.timezone}
         submitLabel="Save changes"
       />
     </div>

@@ -58,12 +58,17 @@ inside the shared `upvoteme` Supabase project, isolated to the `wcv` schema and
 - [ ] GitHub Actions green: lint → typecheck → unit tests → build, plus E2E.
 - [ ] Netlify build succeeds on the Next.js runtime; connect git auto-deploy.
 
+## Done since v1 scope
+
+- **Web Push** — `web-push` sender wired into `notify()`, a Settings
+  enable/disable toggle, service-worker handlers, and VAPID keys in env
+  (requires `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY`; set in Netlify).
+- **Timezone-aware event times** — stored as UTC, rendered in the building's
+  IANA timezone.
+- **RLS isolation test** — `supabase/tests/rls_isolation.sql` (runnable via psql;
+  behavior also verified live).
+
 ## Deferred (post-launch)
 
-- **Web Push send + subscribe UI** — table, service-worker handler, and email/
-  in-app channels are in place; sending needs VAPID keys + the subscribe flow.
-- **Timezone-aware event times** — currently a UTC "wall clock".
-- **RLS test suite (pgTAP)** — the app reads/writes via the service role with
-  authorization in app code; the RLS SELECT policies are defense-in-depth. A
-  full cross-user isolation suite is a good follow-up.
-- Richer search, direct messages, multi-building switcher.
+- Richer search, direct messages, multi-building switcher, video attachments.
+- Wiring `supabase/tests/rls_isolation.sql` into CI (needs a DB connection).

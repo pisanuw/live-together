@@ -10,6 +10,7 @@ export const env = {
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  vapidPublicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
 } as const;
 
 /**
@@ -34,7 +35,13 @@ export const serverEnv = {
   emailFrom:
     process.env.EMAIL_FROM ??
     "West Complex Village <noreply-live-together@pisan.me>",
+  vapidPrivateKey: process.env.VAPID_PRIVATE_KEY,
 } as const;
+
+/** True when both VAPID keys are present (Web Push can be sent). */
+export function isPushConfigured(): boolean {
+  return Boolean(env.vapidPublicKey && serverEnv.vapidPrivateKey);
+}
 
 /** Returns Resend credentials, throwing if the API key is missing. */
 export function requireResend(): { apiKey: string; from: string } {

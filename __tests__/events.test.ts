@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 
+import { parseDatetimeLocal, toDatetimeLocalValue } from "@/lib/events/format";
 import {
   canSignUp,
   capacityLabel,
@@ -82,5 +83,41 @@ describe("labels", () => {
   test("capacityLabel summarizes usage", () => {
     expect(capacityLabel(null, 4)).toBe("Unlimited");
     expect(capacityLabel(10, 3)).toBe("3 / 10 spots");
+  });
+});
+
+describe("timezone conversion", () => {
+  const LA = "America/Los_Angeles";
+
+  test("interprets the wall-clock in the building tz, honoring DST", () => {
+    // Summer → PDT (UTC-7)
+    expect(parseDatetimeLocal("2026-07-01T12:00", LA)).toBe(
+      "2026-07-01T19:00:00.000Z"
+    );
+    // Winter → PST (UTC-8)
+    expect(parseDatetimeLocal("2026-01-01T12:00", LA)).toBe(
+      "2026-01-01T20:00:00.000Z"
+    );
+    // UTC zone is a no-op on the wall clock
+    expect(parseDatetimeLocal("2026-07-01T12:00", "UTC")).toBe(
+      "2026-07-01T12:00:00.000Z"
+    );
+  });
+
+  test("invalid input yields null", () => {
+    expect(parseDatetimeLocal("nope", LA)).toBeNull();
+  });
+
+  test("formats a UTC instant back to a zoned datetime-local value", () => {
+    expect(toDatetimeLocalValue("2026-07-01T19:00:00.000Z", LA)).toBe(
+      "2026-07-01T12:00"
+    );
+    expect(toDatetimeLocalValue(null, LA)).toBe("");
+  });
+
+  test("round-trips wall-clock → UTC → wall-clock", () => {
+    const local = "2026-09-16T18:30";
+    const utc = parseDatetimeLocal(local, LA)!;
+    expect(toDatetimeLocalValue(utc, LA)).toBe(local);
   });
 });

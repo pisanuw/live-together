@@ -32,7 +32,13 @@ export default async function NewEventPage({
         </p>
       ) : null}
 
-      <EventForm action={createEvent} submitLabel="Create event" />
+      <EventForm
+        action={createEvent}
+        timezone={
+          viewer.activeMembership!.building?.timezone ?? "America/Los_Angeles"
+        }
+        submitLabel="Create event"
+      />
     </div>
   );
 }

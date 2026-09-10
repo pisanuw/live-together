@@ -25,6 +25,7 @@ async function requireActor() {
     viewerId: viewer.userId,
     buildingId: membership.building_id,
     isManager: isManagerRole(membership.role),
+    timezone: membership.building?.timezone ?? "America/Los_Angeles",
   };
 }
 
@@ -39,7 +40,7 @@ const eventSchema = z.object({
 });
 
 /** Parses the shared event form fields (title/desc/location/times/capacity). */
-function parseEventForm(formData: FormData) {
+function parseEventForm(formData: FormData, timeZone: string) {
   const parsed = eventSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description") ?? "",
@@ -49,9 +50,15 @@ function parseEventForm(formData: FormData) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid event" };
   }
 
-  const startsAt = parseDatetimeLocal(String(formData.get("starts_at") ?? ""));
+  const startsAt = parseDatetimeLocal(
+    String(formData.get("starts_at") ?? ""),
+    timeZone
+  );
   if (!startsAt) return { error: "Choose a start date and time" };
-  const endsAt = parseDatetimeLocal(String(formData.get("ends_at") ?? ""));
+  const endsAt = parseDatetimeLocal(
+    String(formData.get("ends_at") ?? ""),
+    timeZone
+  );
   if (endsAt && endsAt < startsAt) {
     return { error: "End time must be after the start time" };
   }
@@ -90,10 +97,11 @@ async function maybeUploadCover(
 // --------------------------------------------------------- manager: CRUD ----
 
 export async function createEvent(formData: FormData) {
-  const { admin, viewerId, buildingId, isManager } = await requireActor();
+  const { admin, viewerId, buildingId, isManager, timezone } =
+    await requireActor();
   if (!isManager) redirect("/events");
 
-  const result = parseEventForm(formData);
+  const result = parseEventForm(formData, timezone);
   if (result.error) {
     redirect(`/events/new?error=${encodeURIComponent(result.error)}`);
   }
@@ -129,7 +137,7 @@ export async function createEvent(formData: FormData) {
 }
 
 export async function updateEvent(formData: FormData) {
-  const { admin, buildingId, isManager } = await requireActor();
+  const { admin, buildingId, isManager, timezone } = await requireActor();
   if (!isManager) redirect("/events");
   const eventId = String(formData.get("eventId") ?? "");
 
@@ -141,7 +149,7 @@ export async function updateEvent(formData: FormData) {
     .maybeSingle();
   if (!existing) redirect("/events");
 
-  const result = parseEventForm(formData);
+  const result = parseEventForm(formData, timezone);
   if (result.error) {
     redirect(
       `/events/${eventId}/edit?error=${encodeURIComponent(result.error)}`

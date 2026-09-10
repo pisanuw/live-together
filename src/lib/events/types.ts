@@ -48,6 +48,7 @@ export interface EventListItem {
   isPublished: boolean;
   cancelledAt: string | null;
   coverUrl: string | null;
+  timezone: string;
   registeredSeats: number;
   waitlistCount: number;
   spotsRemaining: number | null;
@@ -71,6 +72,7 @@ export interface EventDetail {
   endsAt: string | null;
   capacity: number | null;
   coverUrl: string | null;
+  timezone: string;
   isPublished: boolean;
   cancelledAt: string | null;
   createdBy: string;

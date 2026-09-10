@@ -45,7 +45,7 @@ export function EventCard({ event }: { event: EventListItem }) {
 
         <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
           <CalendarClock className="size-3.5 shrink-0" />
-          {formatEventWhen(event.startsAt, event.endsAt)}
+          {formatEventWhen(event.startsAt, event.endsAt, event.timezone)}
         </p>
         {event.location ? (
           <p className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-sm">

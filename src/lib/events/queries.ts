@@ -34,6 +34,19 @@ function toCountable(rows: EventSignupRow[] | null): CountableSignup[] {
   }));
 }
 
+/** The building's IANA timezone (used to render event times), with a fallback. */
+async function buildingTimezone(
+  admin: Admin,
+  buildingId: string
+): Promise<string> {
+  const { data } = await admin
+    .from("buildings")
+    .select("timezone")
+    .eq("id", buildingId)
+    .maybeSingle();
+  return (data?.timezone as string | undefined) ?? "America/Los_Angeles";
+}
+
 /** Resolves distinct author profiles to display-ready Authors (signed avatars). */
 async function resolveAuthors(
   admin: Admin,
@@ -103,9 +116,12 @@ export async function listEvents(
     }
   }
 
-  const covers = await signEventCovers(
-    events.map((e) => e.cover_path).filter((p): p is string => Boolean(p))
-  );
+  const [covers, timezone] = await Promise.all([
+    signEventCovers(
+      events.map((e) => e.cover_path).filter((p): p is string => Boolean(p))
+    ),
+    buildingTimezone(admin, buildingId),
+  ]);
 
   return events.map((e) => {
     const { registered, waitlist } = tallySignups(byEvent.get(e.id) ?? []);
@@ -119,6 +135,7 @@ export async function listEvents(
       isPublished: e.is_published,
       cancelledAt: e.cancelled_at,
       coverUrl: e.cover_path ? (covers.get(e.cover_path) ?? null) : null,
+      timezone,
       registeredSeats: registered,
       waitlistCount: waitlist,
       spotsRemaining: spotsRemaining(e.capacity, registered),
@@ -192,6 +209,7 @@ export async function getEventDetail(
     endsAt: event.ends_at,
     capacity: event.capacity,
     coverUrl: await signEventCover(event.cover_path),
+    timezone: await buildingTimezone(admin, buildingId),
     isPublished: event.is_published,
     cancelledAt: event.cancelled_at,
     createdBy: event.created_by,
@@ -246,9 +264,12 @@ export async function listMyEvents(
     byEvent.set(s.event_id, list);
   }
 
-  const covers = await signEventCovers(
-    events.map((e) => e.cover_path).filter((p): p is string => Boolean(p))
-  );
+  const [covers, timezone] = await Promise.all([
+    signEventCovers(
+      events.map((e) => e.cover_path).filter((p): p is string => Boolean(p))
+    ),
+    buildingTimezone(admin, buildingId),
+  ]);
 
   const upcoming: EventListItem[] = [];
   const past: EventListItem[] = [];
@@ -264,6 +285,7 @@ export async function listMyEvents(
       isPublished: e.is_published,
       cancelledAt: e.cancelled_at,
       coverUrl: e.cover_path ? (covers.get(e.cover_path) ?? null) : null,
+      timezone,
       registeredSeats: registered,
       waitlistCount: waitlist,
       spotsRemaining: spotsRemaining(e.capacity, registered),

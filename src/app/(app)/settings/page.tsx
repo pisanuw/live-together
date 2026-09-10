@@ -7,11 +7,13 @@ import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
 import { getViewer } from "@/lib/auth/context";
 import { displayName } from "@/lib/auth/types";
+import { env } from "@/lib/env";
 import { resolveAvatarUrl } from "@/lib/storage/avatars";
 
 import { AccentSelector } from "./accent-selector";
 import { updateProfile, uploadAvatarAction } from "./actions";
 import { NotifPrefsForm } from "./notif-prefs-form";
+import { PushToggle } from "./push-toggle";
 import { ThemeSelector } from "./theme-selector";
 
 const inputClass =
@@ -106,6 +108,12 @@ export default async function SettingsPage({
           notifications.
         </p>
         <NotifPrefsForm prefs={viewer.notifPrefs} />
+        {env.vapidPublicKey ? (
+          <div className="space-y-1 pt-1">
+            <p className="text-muted-foreground text-xs">Push notifications</p>
+            <PushToggle publicKey={env.vapidPublicKey} />
+          </div>
+        ) : null}
       </section>
 
       <section className="space-y-3">
