@@ -40,6 +40,13 @@ jobs:
   e2e:
     name: E2E (Playwright)
     runs-on: ubuntu-latest
+    # Public, non-secret placeholders so the app boots for unauthenticated
+    # flows; the client only calls Supabase on user action. Real end-to-end
+    # auth needs a seeded test user (see docs/LAUNCH.md).
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: e2e-placeholder-anon-key
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
 

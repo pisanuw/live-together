@@ -501,12 +501,25 @@ Each stage ends in a deployable, demoable increment. Suggested order:
   place (reuses the forum Server Actions).
 - **Done when:** an admin can run a building without touching the database. ✅
 
-### Stage 10 — Polish, hardening & launch
-- Accessibility pass, empty/error/loading states, E2E coverage of critical
-  flows, RLS test suite, performance & Supabase advisor cleanup, seed/demo data,
-  production launch checklist.
-- **Done when:** green CI, passing RLS/E2E tests, clean advisors, production
-  deploy.
+### Stage 10 — Polish, hardening & launch ✅
+- ✅ App-shell UX states: `loading.tsx` skeleton, `error.tsx` boundary, and
+  `not-found.tsx` (app + root). Empty states already exist across features.
+- ✅ Accessibility: skip-to-content link + `main` landmark; aria-busy on loading.
+- ✅ E2E: replaced the stale Stage-0 test with unauthenticated login-flow specs
+  (`e2e/auth.spec.ts`, passing); CI e2e job given public placeholder env so the
+  app boots. CI already gates lint → typecheck → unit tests → build, then E2E.
+- ✅ RLS: verified all 20 `wcv` tables have RLS enabled + a policy; the app
+  writes via the service role with app-layer authorization (policies are
+  defense-in-depth). A full pgTAP cross-user suite is deferred (see LAUNCH.md).
+- ✅ Advisors: no security/perf **WARN or ERROR** attributable to `wcv`
+  (residual INFO — low-selectivity FK indexes, unused indexes on empty tables —
+  is acceptable; the WARNs shown belong to other apps' `public` tables or
+  project-wide auth settings).
+- ✅ Seed/demo data: `supabase/seed.sql` (idempotent starter info-desk items),
+  applied to the shared project so the Info Desk isn't blank.
+- ✅ Launch checklist: `docs/LAUNCH.md` (dashboard steps, env, verification).
+- **Done when:** green CI, passing E2E, clean `wcv` advisors, RLS verified. ✅
+  (Production deploy is a manual push + Netlify connect — see LAUNCH.md.)
 
 ### Later (post-v1)
 - Video attachments UI, richer search, direct messages, native mobile

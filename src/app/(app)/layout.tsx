@@ -28,6 +28,12 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-full flex-col">
+      <a
+        href="#main"
+        className="bg-background focus:ring-ring sr-only z-50 rounded-md border px-3 py-2 text-sm focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:ring-2"
+      >
+        Skip to content
+      </a>
       <NotificationsRealtime userId={viewer.userId!} />
       <AppHeader
         name={name}
@@ -37,7 +43,9 @@ export default async function AppLayout({
       />
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-4 sm:p-6 md:flex-row">
         <AppNav canManage={isManagerRole(active.role)} />
-        <main className="min-w-0 flex-1">{children}</main>
+        <main id="main" className="min-w-0 flex-1">
+          {children}
+        </main>
       </div>
     </div>
   );
