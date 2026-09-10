@@ -7,6 +7,10 @@ import type { User } from "@supabase/supabase-js";
 import { provisionUser } from "@/lib/auth/provision";
 import type { Membership, MembershipRole, Profile } from "@/lib/auth/types";
 import { isManagerRole } from "@/lib/auth/types";
+import type { Accent } from "@/lib/settings/accent";
+import { isAccent } from "@/lib/settings/accent";
+import type { NotifPrefs } from "@/lib/settings/notifications";
+import { normalizeNotifPrefs } from "@/lib/settings/notifications";
 import type { Theme } from "@/lib/settings/theme";
 import { isTheme } from "@/lib/settings/theme";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -19,6 +23,8 @@ export interface Viewer {
   memberships: Membership[];
   activeMembership: Membership | null;
   theme: Theme;
+  accent: Accent;
+  notifPrefs: NotifPrefs;
 }
 
 const EMPTY: Viewer = {
@@ -28,6 +34,8 @@ const EMPTY: Viewer = {
   memberships: [],
   activeMembership: null,
   theme: "system",
+  accent: "default",
+  notifPrefs: {},
 };
 
 /**
@@ -66,7 +74,7 @@ export const getViewer = cache(async function getViewer(): Promise<Viewer> {
     admin.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     admin
       .from("user_settings")
-      .select("theme")
+      .select("theme, accent, notif_prefs")
       .eq("user_id", user.id)
       .maybeSingle(),
   ]);
@@ -75,6 +83,7 @@ export const getViewer = cache(async function getViewer(): Promise<Viewer> {
     memberships.find((m) => m.status === "approved") ?? memberships[0] ?? null;
 
   const themeValue = settings?.theme;
+  const accentValue = settings?.accent;
   return {
     user,
     userId: user.id,
@@ -82,6 +91,8 @@ export const getViewer = cache(async function getViewer(): Promise<Viewer> {
     memberships,
     activeMembership,
     theme: themeValue && isTheme(themeValue) ? themeValue : "system",
+    accent: accentValue && isAccent(accentValue) ? accentValue : "default",
+    notifPrefs: normalizeNotifPrefs(settings?.notif_prefs),
   };
 });
 

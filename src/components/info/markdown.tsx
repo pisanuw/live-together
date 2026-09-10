@@ -40,7 +40,18 @@ export function Markdown({ text }: { text: string }) {
   return (
     <div className="space-y-2 text-sm leading-relaxed">
       {blocks.map((block, bi) =>
-        block.type === "list" ? (
+        block.type === "heading" ? (
+          <p
+            key={bi}
+            className={
+              block.level <= 2
+                ? "text-foreground pt-2 text-base font-semibold"
+                : "text-foreground font-medium"
+            }
+          >
+            <Inline text={block.text} />
+          </p>
+        ) : block.type === "list" ? (
           <ul key={bi} className="list-disc space-y-0.5 pl-5">
             {block.items.map((item, ii) => (
               <li key={ii}>

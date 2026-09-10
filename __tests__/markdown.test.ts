@@ -34,6 +34,15 @@ describe("parseBlocks", () => {
   test("empty input yields no blocks", () => {
     expect(parseBlocks("   \n  \n")).toEqual([]);
   });
+
+  test("recognizes headings and their level", () => {
+    const blocks = parseBlocks("# Title\n\n## Section\n\nbody text");
+    expect(blocks).toEqual([
+      { type: "heading", level: 1, text: "Title" },
+      { type: "heading", level: 2, text: "Section" },
+      { type: "paragraph", lines: ["body text"] },
+    ]);
+  });
 });
 
 describe("tokenizeInline", () => {

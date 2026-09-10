@@ -453,10 +453,21 @@ Each stage ends in a deployable, demoable increment. Suggested order:
   link schemes survive. Parser unit-tested in `__tests__/markdown.test.ts`.
 - **Done when:** managers edit info; residents view it, click-to-call phones. ✅
 
-### Stage 7 — Settings completion
-- Preferred name, look-and-feel (theme/accent), notification preferences,
-  Privacy Policy, Terms of Service, account/data controls.
-- **Done when:** all settings persist and notif prefs actually gate emails.
+### Stage 7 — Settings completion ✅
+- ✅ Look & feel: theme (Stage 2) + **accent color** applied server-side via a
+  `:root` override in the root layout (no flash), with an optimistic picker.
+- ✅ **Notification preferences** (per-category toggles) stored in
+  `user_settings.notif_prefs`; `isNotifEnabled` helper gates sends (honored in
+  Stage 8). No migration needed — `accent`/`notif_prefs` columns existed from
+  Stage 2.
+- ✅ Privacy Policy + Terms of Service: versioned in-repo copy
+  (`src/content/legal.ts`) rendered at `/settings/legal/[doc]` via the info
+  Markdown subset (extended with heading support).
+- ✅ Account/data controls: account email, **data export** (`/settings/export`
+  returns the caller's own rows as a JSON download), and sign-out.
+- Pure accent + notif-pref helpers unit-tested; markdown heading parsing tested.
+- **Done when:** all settings persist and notif prefs are available to gate
+  emails (Stage 8 consumes them). ✅
 
 ### Stage 8 — Notifications hardening & PWA
 - Resend-backed transactional emails via Edge Functions across all features.

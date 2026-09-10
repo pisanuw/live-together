@@ -1,10 +1,17 @@
+import Link from "next/link";
+import { Download } from "lucide-react";
+
 import { Avatar } from "@/components/avatar";
+import { SignOutButton } from "@/components/sign-out-button";
 import { SubmitButton } from "@/components/submit-button";
+import { Button } from "@/components/ui/button";
 import { getViewer } from "@/lib/auth/context";
 import { displayName } from "@/lib/auth/types";
 import { resolveAvatarUrl } from "@/lib/storage/avatars";
 
+import { AccentSelector } from "./accent-selector";
 import { updateProfile, uploadAvatarAction } from "./actions";
+import { NotifPrefsForm } from "./notif-prefs-form";
 import { ThemeSelector } from "./theme-selector";
 
 const inputClass =
@@ -82,14 +89,51 @@ export default async function SettingsPage({
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold">Appearance</h2>
-        <ThemeSelector current={viewer.theme} />
+        <div className="space-y-1">
+          <p className="text-muted-foreground text-xs">Theme</p>
+          <ThemeSelector current={viewer.theme} />
+        </div>
+        <div className="space-y-1">
+          <p className="text-muted-foreground text-xs">Accent</p>
+          <AccentSelector current={viewer.accent} />
+        </div>
       </section>
 
-      <section className="text-muted-foreground space-y-2 text-sm">
-        <h2 className="text-foreground text-sm font-semibold">More</h2>
-        <p>
-          Privacy policy, terms of service, and notification preferences arrive
-          in Stage 7.
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold">Notifications</h2>
+        <p className="text-muted-foreground text-xs">
+          Choose what you want to hear about. These apply to email and in-app
+          notifications.
+        </p>
+        <NotifPrefsForm prefs={viewer.notifPrefs} />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold">Account</h2>
+        <p className="text-muted-foreground text-sm">
+          Signed in as{" "}
+          <span className="text-foreground">{viewer.user?.email}</span>
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <a href="/settings/export">
+              <Download data-icon="inline-start" />
+              Download my data
+            </a>
+          </Button>
+          <SignOutButton />
+        </div>
+      </section>
+
+      <section className="text-muted-foreground space-y-1 text-sm">
+        <h2 className="text-foreground text-sm font-semibold">Legal</h2>
+        <p className="flex gap-3">
+          <Link href="/settings/legal/privacy" className="hover:underline">
+            Privacy Policy
+          </Link>
+          <Link href="/settings/legal/terms" className="hover:underline">
+            Terms of Service
+          </Link>
         </p>
       </section>
     </div>

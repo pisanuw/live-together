@@ -10,7 +10,9 @@ export type InlineToken =
   | { type: "link"; text: string; href: string };
 
 export type Block =
-  { type: "paragraph"; lines: string[] } | { type: "list"; items: string[] };
+  | { type: "heading"; level: number; text: string }
+  | { type: "paragraph"; lines: string[] }
+  | { type: "list"; items: string[] };
 
 /** Returns the href if it uses a safe scheme, else null (render as text). */
 export function safeHref(href: string): string | null {
@@ -31,6 +33,15 @@ export function parseBlocks(text: string): Block[] {
         .map((l) => l.trim())
         .filter(Boolean);
       if (lines.length === 0) return null;
+
+      const heading = lines.length === 1 && /^(#{1,6})\s+/.exec(lines[0]);
+      if (heading) {
+        return {
+          type: "heading" as const,
+          level: heading[1].length,
+          text: lines[0].slice(heading[1].length).trim(),
+        };
+      }
 
       if (lines.every((l) => /^[-*]\s+/.test(l))) {
         return {

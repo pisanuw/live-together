@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { getViewer } from "@/lib/auth/context";
+import { accentStyle } from "@/lib/settings/accent";
 import { themeInitScript } from "@/lib/settings/theme";
 
 const geistSans = Geist({
@@ -23,9 +24,10 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Theme is stored per user in wcv.user_settings (via getViewer). Apply it on
   // the server to avoid a flash; `system` is resolved before paint by a script.
-  const { theme } = await getViewer();
+  const { theme, accent } = await getViewer();
   const darkClass = theme === "dark" ? "dark" : "";
   const initScript = themeInitScript(theme);
+  const accentCss = accentStyle(accent);
 
   return (
     <html
@@ -34,6 +36,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${darkClass} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        {accentCss ? <style>{accentCss}</style> : null}
         {initScript ? (
           <script dangerouslySetInnerHTML={{ __html: initScript }} />
         ) : null}
