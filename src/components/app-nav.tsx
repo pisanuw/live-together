@@ -17,7 +17,7 @@ const LINKS = [
 export function AppNav({ canManage }: { canManage: boolean }) {
   const pathname = usePathname();
   const links = canManage
-    ? [...LINKS, { href: "/manage/members", label: "Members" }]
+    ? [...LINKS, { href: "/manage", label: "Manage" }]
     : LINKS;
 
   return (

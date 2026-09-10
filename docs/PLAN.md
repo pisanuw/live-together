@@ -489,10 +489,17 @@ Each stage ends in a deployable, demoable increment. Suggested order:
 - **Done when:** users receive email + in-app notifications per prefs ✅; push
   delivery is scaffolded pending VAPID keys.
 
-### Stage 9 — Admin & moderation tooling
-- Member management (invite, approve, suspend, roles), building settings,
-  category management, basic content moderation dashboard.
-- **Done when:** an admin can run a building without touching the database.
+### Stage 9 — Admin & moderation tooling ✅
+- ✅ `/manage` hub links to the tools a manager/admin can use.
+- ✅ Members (`/manage/members`): approve/reject, **invite**, **suspend /
+  reinstate**, and **change roles** (admin-only; can't change your own role, and
+  only admins may suspend other managers). No migration — uses `memberships`.
+- ✅ Building settings (`/manage/building`, admin): name, address, timezone.
+- ✅ Forum categories (`/manage/categories`, admin): add/rename/recolor/delete,
+  reflected immediately on the forum.
+- ✅ Moderation (`/manage/moderation`): pin/unpin and remove forum posts in one
+  place (reuses the forum Server Actions).
+- **Done when:** an admin can run a building without touching the database. ✅
 
 ### Stage 10 — Polish, hardening & launch
 - Accessibility pass, empty/error/loading states, E2E coverage of critical

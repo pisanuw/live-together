@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getManagedMembership } from "@/lib/auth/context";
+import { isManagerRole } from "@/lib/auth/types";
 import { DEFAULT_BUILDING_SLUG } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -42,6 +43,60 @@ export async function rejectMember(formData: FormData) {
     .from("memberships")
     .update({ status: "rejected" })
     .eq("id", membershipId);
+  revalidatePath(MEMBERS_PATH);
+}
+
+/** Suspend an approved member. Only admins may suspend a manager/admin. */
+export async function suspendMember(formData: FormData) {
+  const membershipId = String(formData.get("membershipId") ?? "");
+  const { admin, manager } = await authorizeForMembership(membershipId);
+
+  const { data: full } = await admin
+    .from("memberships")
+    .select("role, user_id")
+    .eq("id", membershipId)
+    .maybeSingle();
+  if (!full) redirect(MEMBERS_PATH);
+  if (full!.user_id === manager.user_id) redirect(MEMBERS_PATH); // no self-suspend
+  if (isManagerRole(full!.role) && manager.role !== "admin") {
+    redirect(MEMBERS_PATH); // only admins suspend elevated members
+  }
+
+  await admin
+    .from("memberships")
+    .update({ status: "suspended" })
+    .eq("id", membershipId);
+  revalidatePath(MEMBERS_PATH);
+}
+
+/** Re-approve a suspended or rejected member. */
+export async function reinstateMember(formData: FormData) {
+  const membershipId = String(formData.get("membershipId") ?? "");
+  const { admin, manager } = await authorizeForMembership(membershipId);
+  await admin
+    .from("memberships")
+    .update({ status: "approved", approved_by: manager.user_id })
+    .eq("id", membershipId);
+  revalidatePath(MEMBERS_PATH);
+}
+
+/** Change a member's role. Admin-only; cannot change your own role. */
+export async function changeRole(formData: FormData) {
+  const membershipId = String(formData.get("membershipId") ?? "");
+  const role = String(formData.get("role") ?? "");
+  if (!["resident", "manager", "admin"].includes(role)) redirect(MEMBERS_PATH);
+
+  const { admin, manager } = await authorizeForMembership(membershipId);
+  if (manager.role !== "admin") redirect(MEMBERS_PATH);
+
+  const { data: full } = await admin
+    .from("memberships")
+    .select("user_id")
+    .eq("id", membershipId)
+    .maybeSingle();
+  if (!full || full!.user_id === manager.user_id) redirect(MEMBERS_PATH);
+
+  await admin.from("memberships").update({ role }).eq("id", membershipId);
   revalidatePath(MEMBERS_PATH);
 }
 

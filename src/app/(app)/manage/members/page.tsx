@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
 import { getViewer } from "@/lib/auth/context";
 import { viewerStatus } from "@/lib/auth/routing";
@@ -8,13 +9,23 @@ import type { Membership, Profile } from "@/lib/auth/types";
 import { displayName, isManagerRole } from "@/lib/auth/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { approveMember, createInvite, rejectMember } from "./actions";
+import {
+  approveMember,
+  changeRole,
+  createInvite,
+  reinstateMember,
+  rejectMember,
+  suspendMember,
+} from "./actions";
+
+const ROLES = ["resident", "manager", "admin"] as const;
 
 export default async function MembersPage() {
   const viewer = await getViewer();
   if (viewerStatus(viewer) !== "approved") redirect("/");
   const active = viewer.activeMembership!;
   if (!isManagerRole(active.role)) redirect("/");
+  const isAdmin = active.role === "admin";
 
   const admin = createAdminClient();
   const { data: membersData } = await admin
@@ -43,14 +54,18 @@ export default async function MembersPage() {
 
   const pending = members.filter((m) => m.status === "pending");
   const approved = members.filter((m) => m.status === "approved");
-  const isAdmin = active.role === "admin";
+  const suspended = members.filter(
+    (m) => m.status === "suspended" || m.status === "rejected"
+  );
+  const nameOf = (m: Membership, fallback: string) =>
+    displayName(profiles.get(m.user_id) ?? null, fallback);
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 p-8">
+    <div className="max-w-2xl space-y-8">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Members</h1>
         <Button asChild variant="outline" size="sm">
-          <Link href="/">Back</Link>
+          <Link href="/manage">Back</Link>
         </Button>
       </header>
 
@@ -67,21 +82,19 @@ export default async function MembersPage() {
                 key={m.id}
                 className="flex items-center justify-between gap-3 p-3"
               >
-                <span className="text-sm">
-                  {displayName(profiles.get(m.user_id) ?? null, "New resident")}
-                </span>
+                <span className="text-sm">{nameOf(m, "New resident")}</span>
                 <div className="flex gap-2">
                   <form action={approveMember}>
                     <input type="hidden" name="membershipId" value={m.id} />
-                    <Button type="submit" size="sm">
+                    <SubmitButton size="sm" pendingText="…">
                       Approve
-                    </Button>
+                    </SubmitButton>
                   </form>
                   <form action={rejectMember}>
                     <input type="hidden" name="membershipId" value={m.id} />
-                    <Button type="submit" size="sm" variant="outline">
+                    <SubmitButton size="sm" variant="outline" pendingText="…">
                       Reject
-                    </Button>
+                    </SubmitButton>
                   </form>
                 </div>
               </li>
@@ -93,27 +106,90 @@ export default async function MembersPage() {
       <section className="space-y-3">
         <h2 className="text-sm font-semibold">Approved ({approved.length})</h2>
         <ul className="divide-border divide-y rounded-lg border">
-          {approved.map((m) => (
-            <li
-              key={m.id}
-              className="flex items-center justify-between gap-3 p-3"
-            >
-              <span className="text-sm">
-                {displayName(profiles.get(m.user_id) ?? null, "Resident")}
-              </span>
-              <span className="text-muted-foreground text-xs capitalize">
-                {m.role}
-              </span>
-            </li>
-          ))}
+          {approved.map((m) => {
+            const isSelf = m.user_id === viewer.userId;
+            const canSuspend = !isSelf && (isAdmin || !isManagerRole(m.role));
+            return (
+              <li
+                key={m.id}
+                className="flex flex-wrap items-center justify-between gap-3 p-3"
+              >
+                <span className="text-sm">{nameOf(m, "Resident")}</span>
+                <div className="flex items-center gap-2">
+                  {isAdmin && !isSelf ? (
+                    <form
+                      action={changeRole}
+                      className="flex items-center gap-1"
+                    >
+                      <input type="hidden" name="membershipId" value={m.id} />
+                      <select
+                        name="role"
+                        defaultValue={m.role}
+                        className="border-input bg-background h-7 rounded-md border px-2 text-xs capitalize"
+                      >
+                        {ROLES.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
+                        ))}
+                      </select>
+                      <SubmitButton size="xs" variant="outline" pendingText="…">
+                        Set
+                      </SubmitButton>
+                    </form>
+                  ) : (
+                    <span className="text-muted-foreground text-xs capitalize">
+                      {m.role}
+                      {isSelf ? " (you)" : ""}
+                    </span>
+                  )}
+                  {canSuspend ? (
+                    <form action={suspendMember}>
+                      <input type="hidden" name="membershipId" value={m.id} />
+                      <SubmitButton size="xs" variant="ghost" pendingText="…">
+                        Suspend
+                      </SubmitButton>
+                    </form>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </section>
+
+      {suspended.length ? (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold">
+            Suspended / rejected ({suspended.length})
+          </h2>
+          <ul className="divide-border divide-y rounded-lg border">
+            {suspended.map((m) => (
+              <li
+                key={m.id}
+                className="flex items-center justify-between gap-3 p-3"
+              >
+                <span className="text-muted-foreground text-sm">
+                  {nameOf(m, "Resident")}{" "}
+                  <span className="text-xs">· {m.status}</span>
+                </span>
+                <form action={reinstateMember}>
+                  <input type="hidden" name="membershipId" value={m.id} />
+                  <SubmitButton size="sm" variant="outline" pendingText="…">
+                    Reinstate
+                  </SubmitButton>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold">Invite a resident</h2>
         <p className="text-muted-foreground text-xs">
           Invited people are auto-approved when they first sign in with this
-          email. (Email delivery arrives in a later stage.)
+          email.
         </p>
         <form
           action={createInvite}
@@ -135,9 +211,9 @@ export default async function MembersPage() {
             {isAdmin ? <option value="manager">Manager</option> : null}
             {isAdmin ? <option value="admin">Admin</option> : null}
           </select>
-          <Button type="submit" size="sm">
+          <SubmitButton size="sm" pendingText="…">
             Invite
-          </Button>
+          </SubmitButton>
         </form>
 
         {invites.length > 0 ? (
@@ -156,6 +232,6 @@ export default async function MembersPage() {
           </ul>
         ) : null}
       </section>
-    </main>
+    </div>
   );
 }
