@@ -403,15 +403,24 @@ Each stage ends in a deployable, demoable increment. Suggested order:
 - **Done when:** residents can post, reply, react, tag, filter, and attach
   images; managers can pin/moderate. ✅
 
-### Stage 4 — Events & My Events
-- Tables: `events`, `event_signups`.
-- Manager: create/edit/publish/cancel events with capacity + cover image.
-- Resident: browse upcoming events, sign up / cancel; capacity + waitlist
-  enforced by RPC (no overbooking).
-- **My Events:** the signed-in user's upcoming & past sign-ups.
-- Notifications on cancel / waitlist promotion.
+### Stage 4 — Events & My Events ✅
+- ✅ Tables applied: `events`, `event_signups` (+ RLS SELECT policies,
+  `updated_at` triggers, indexes, `wcv-event-media` bucket).
+- ✅ Manager: create/edit/publish-unpublish/cancel events with capacity, times,
+  location, and cover image (service-role writes, Zod-validated, manager-gated).
+- ✅ Resident: browse upcoming events, sign up (with guests) / cancel. Capacity
+  + waitlist are enforced by two SECURITY DEFINER RPCs
+  (`wcv.signup_for_event`, `wcv.cancel_event_signup`) that lock the event row
+  (`FOR UPDATE`) so concurrent requests can't overbook; cancelling promotes the
+  oldest waitlisted member. Verified end to end (register → waitlist at cap →
+  cancel → auto-promote). RPCs granted to `service_role` only (advisor-clean).
+- ✅ **My Events:** the viewer's active sign-ups, split into upcoming & past.
+- Pure seat/timing logic unit-tested in `__tests__/events.test.ts`.
+- Deferred to Stage 8: email/in-app notifications on cancel / waitlist
+  promotion (the promotion itself already happens in the DB). Timezone-aware
+  display (times are currently a UTC "wall clock") is later polish.
 - **Done when:** capacity-limited sign-ups work correctly under concurrency and
-  appear in My Events.
+  appear in My Events. ✅
 
 ### Stage 5 — Maintenance requests
 - Tables: `maintenance_requests`, `maintenance_updates`.
