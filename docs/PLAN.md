@@ -422,15 +422,22 @@ Each stage ends in a deployable, demoable increment. Suggested order:
 - **Done when:** capacity-limited sign-ups work correctly under concurrency and
   appear in My Events. ✅
 
-### Stage 5 — Maintenance requests
-- Tables: `maintenance_requests`, `maintenance_updates`.
-- Resident: file a request (with photos), see own open & closed requests, add
-  comments.
-- Manager: see all requests, triage (assign, set priority/status), post
-  updates; residents notified on changes.
-- Open vs closed views with filters.
+### Stage 5 — Maintenance requests ✅
+- ✅ Tables applied: `maintenance_requests`, `maintenance_updates` (+ RLS SELECT
+  policies, `updated_at` trigger, indexes); `attachments` extended with
+  `maintenance_request_id`; `wcv-maintenance-media` bucket.
+- ✅ Resident: file a request (category, priority, description, photos), see own
+  open & closed requests, comment, and cancel an open request.
+- ✅ Manager: see all requests, triage (status transitions, priority, assign to
+  a manager), post updates and **internal** notes (hidden from residents via
+  RLS + query filtering). Status changes are recorded in the activity timeline.
+- ✅ Open / Closed / All views via `?scope=`; status/priority/category badges.
+- Pure label + status-transition logic unit-tested in
+  `__tests__/maintenance.test.ts` (advisor-clean).
+- Deferred to Stage 8: resident notifications on status changes (the activity
+  log already records them).
 - **Done when:** full request lifecycle (open → in_progress → resolved/closed)
-  works for both roles with notifications.
+  works for both roles. ✅
 
 ### Stage 6 — Info Desk
 - Tables: `info_sections`, `info_items`.
